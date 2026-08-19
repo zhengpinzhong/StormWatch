@@ -24,16 +24,12 @@ echo "Configuring GitHub Actions secrets for repo: ${repo}"
 echo
 echo "Recommended Bark defaults:"
 echo "  EMAIL_BACKEND=bark"
-echo "  BARK_BASE_URL=https://api.day.app"
 echo "  BARK_DEVICE_KEY=<your Bark device key>"
 echo "You can paste either the full Bark URL or just the device key."
 echo
 
 read -r -p "EMAIL_BACKEND [bark]: " email_backend
 email_backend="${email_backend:-bark}"
-
-read -r -p "BARK_BASE_URL [https://api.day.app]: " bark_base_url
-bark_base_url="${bark_base_url:-https://api.day.app}"
 
 read -r -s -p "BARK URL or device key (input hidden): " bark_device_input
 echo
@@ -51,13 +47,11 @@ if [[ -z "${bark_device_key}" ]]; then
 fi
 
 printf '%s' "${email_backend}" | gh secret set EMAIL_BACKEND --repo "${repo}" --body -
-printf '%s' "${bark_base_url}" | gh secret set BARK_BASE_URL --repo "${repo}" --body -
 printf '%s' "${bark_device_key}" | gh secret set BARK_DEVICE_KEY --repo "${repo}" --body -
 
 echo
 echo "Done. The following secrets were set for ${repo}:"
 echo "  EMAIL_BACKEND"
-echo "  BARK_BASE_URL"
 echo "  BARK_DEVICE_KEY"
 echo
 echo "Next step:"

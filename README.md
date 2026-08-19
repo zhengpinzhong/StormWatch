@@ -42,7 +42,6 @@ GitHub Actions (cron)
 | Secret | 說明 | 示例 |
 |--------|------|------|
 | `EMAIL_BACKEND` | 通知后端（固定填 `bark`） | `bark` |
-| `BARK_BASE_URL` | Bark 服务地址 | `https://api.day.app` |
 | `BARK_DEVICE_KEY` | Bark 设备 Key | `xxxxxxxxxxxxxxxxxxx` |
 
 ### 3. 啟用 GitHub Actions
@@ -62,7 +61,6 @@ pip install -r requirements.txt
 
 # 設置環境變量
 export EMAIL_BACKEND="bark"
-export BARK_BASE_URL="https://api.day.app"
 export BARK_DEVICE_KEY="你的Bark设备Key"
 
 # 乾跑（不發郵件、不寫 state）
@@ -108,7 +106,7 @@ StormWatch/
 - GitHub Actions cron 最小粒度為 5 分鐘，因此「立即通知」實際延遲約 0–5 分鐘
 - `data/state.json` 會由 Actions 自動 commit 回倉庫，用於跨運行去重
 - 首次部署時，若當前已有緊急預警生效，會在第一次檢查時發送通知
-- 若你使用官方 Bark 服务，`BARK_BASE_URL` 保持 `https://api.day.app` 即可
+- 项目默认直接使用官方 Bark 服务 `https://api.day.app`
 
 ## License
 

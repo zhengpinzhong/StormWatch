@@ -28,7 +28,7 @@ jobs:
       - name: Send daily summary
         env:
           EMAIL_BACKEND: bark
-          BARK_BASE_URL: ${{ secrets.BARK_BASE_URL }}
+          BARK_BASE_URL: "https://api.day.app"
           BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: python -m src.main daily
