@@ -29,13 +29,14 @@ class BarkNotifier:
 
     def send(self, title: str, body: str, group: str, level: str = "active") -> None:
         payload = {
+            "device_key": self.device_key,
             "title": title,
             "body": body,
             "group": group,
             "level": level,
         }
         response = requests.post(
-            f"{self.base_url}/{self.device_key}",
+            f"{self.base_url}/push",
             json=payload,
             timeout=30,
         )
