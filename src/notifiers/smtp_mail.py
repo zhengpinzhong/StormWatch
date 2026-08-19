@@ -26,14 +26,14 @@ class SMTPNotifier:
         mail_from: str | None = None,
         mail_to: str | None = None,
     ) -> None:
-        self.smtp_host = smtp_host or os.environ["SMTP_HOST"]
+        self.smtp_host = str(smtp_host or os.environ["SMTP_HOST"]).strip().strip('"').strip("'")
         self.smtp_port = self._parse_port(
             smtp_port or os.environ.get("SMTP_PORT", os.environ.get("SMTP_PORT_STR"))
         )
-        self.smtp_username = smtp_username or os.environ["SMTP_USERNAME"]
-        self.smtp_password = smtp_password or os.environ["SMTP_PASSWORD"]
-        self.mail_from = mail_from or os.environ["MAIL_FROM"]
-        self.mail_to = mail_to or os.environ["MAIL_TO"]
+        self.smtp_username = str(smtp_username or os.environ["SMTP_USERNAME"]).strip()
+        self.smtp_password = str(smtp_password or os.environ["SMTP_PASSWORD"])
+        self.mail_from = str(mail_from or os.environ["MAIL_FROM"]).strip()
+        self.mail_to = str(mail_to or os.environ["MAIL_TO"]).strip()
 
     @staticmethod
     def _parse_port(raw_port: object | None) -> int:

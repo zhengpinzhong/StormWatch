@@ -28,7 +28,7 @@ jobs:
       - name: Check for immediate alerts
         env:
           EMAIL_BACKEND: smtp
-          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_HOST: "smtp-mail.outlook.com"
           SMTP_PORT: "587"
           SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
           SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
