@@ -31,8 +31,6 @@ class BarkNotifier:
         payload = {
             "title": title,
             "body": body,
-            "group": group,
-            "level": level,
         }
         response = requests.post(
             f"{self.base_url}/{self.device_key}",
