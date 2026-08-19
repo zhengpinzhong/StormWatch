@@ -1,0 +1,121 @@
+# StormWatch
+
+香港天文台（HKO）天氣預警監測機器人。當出現**黑色/紅色暴雨**或**8號/10號風球**時立即發送郵件通知；其它警告則在每天 **09:30 HKT** 匯總推送。
+
+## 功能
+
+- **立即通知**（每 5 分鐘檢查一次）：
+  - 黑色暴雨（WRAINB）
+  - 紅色暴雨（WRAINR）
+  - 8號風球（TC8NE / TC8NW / TC8SE / TC8SW）
+  - 10號風球（TC10）
+- **每日匯總**（09:30 HKT）：
+  - 其它生效中的天氣警告
+  - 同時列出當前生效的緊急預警狀態
+- **去重機制**：透過 `data/state.json` 記錄已通知事件，避免重複發信
+
+## 架構
+
+```
+GitHub Actions (cron)
+    → src/main.py
+        → HKO Open Data API (warnsum / warningInfo)
+        → rules.py（判定是否立即觸發）
+        → state.json（去重）
+        → SMTP（發送郵件）
+```
+
+## 快速開始
+
+### 1. 配置 Outlook SMTP 发信
+
+StormWatch 通过 SMTP 直接用你的 Outlook 邮箱发送邮件，因此你需要准备下面这些 GitHub Secrets。
+
+常用 SMTP 服务器（按邮箱类型选一个填到 `SMTP_HOST`）：
+- Outlook.com 个人邮箱：`smtp-mail.outlook.com`
+- Microsoft 365（工作账号）：`smtp.office365.com`
+
+### 2. 配置 GitHub Secrets
+
+在倉庫 **Settings → Secrets and variables → Actions** 中添加：
+
+| Secret | 說明 | 示例 |
+|--------|------|------|
+| `EMAIL_BACKEND` | 邮件后端（固定填 `smtp`） | `smtp` |
+| `SMTP_HOST` | SMTP 主机 | `smtp-mail.outlook.com` |
+| `SMTP_PORT` | SMTP 端口（通常 587） | `587` |
+| `SMTP_USERNAME` | SMTP 登录用户名 | 你的 Outlook 邮箱 |
+| `SMTP_PASSWORD` | SMTP 登录密码（通常就是邮箱密码；如果后续报错再考虑 App Password） | 你的密码 |
+| `MAIL_FROM` | 已驗證的發件人郵箱 | `alerts@yourdomain.com` |
+| `MAIL_TO` | 收件人郵箱 | `zhengpinzhong@outlook.com` |
+
+### 3. 啟用 GitHub Actions
+
+推送代碼後，兩個 workflow 會自動運行：
+
+- `stormwatch-immediate.yml`：每 5 分鐘檢查緊急預警
+- `stormwatch-daily.yml`：每天 09:30 HKT 發送匯總
+
+也可在 Actions 頁面手動觸發（workflow_dispatch）。
+
+## 本地測試
+
+```bash
+# 安裝依賴
+pip install -r requirements.txt
+
+# 設置環境變量
+export EMAIL_BACKEND="smtp"
+export SMTP_HOST="smtp-mail.outlook.com"
+export SMTP_PORT="587"
+export SMTP_USERNAME="你的Outlook邮箱"
+export SMTP_PASSWORD="你的邮箱密码"
+export MAIL_FROM="alerts@yourdomain.com"
+export MAIL_TO="zhengpinzhong@outlook.com"
+
+# 乾跑（不發郵件、不寫 state）
+python -m src.main immediate --dry-run --verbose
+python -m src.main daily --dry-run --verbose
+
+# 實際運行
+python -m src.main immediate
+python -m src.main daily
+```
+
+## 數據來源
+
+- 主數據源：[HKO Open Data API](https://data.weather.gov.hk/weatherAPI/opendata/weather.php)
+  - `dataType=warnsum`：天氣警告摘要
+  - `dataType=warningInfo`：詳細警告內容
+- 備用數據源：HKO 官方 RSS（API 不可用時自動降級）
+
+## 項目結構
+
+```
+StormWatch/
+├── .github/workflows/
+│   ├── stormwatch-immediate.yml   # 每 5 分鐘緊急檢查
+│   └── stormwatch-daily.yml       # 每日 09:30 匯總
+├── data/
+│   └── state.json                 # 去重狀態（由 Actions 自動更新）
+├── src/
+│   ├── main.py                    # 入口
+│   ├── hko_client.py              # HKO API 客戶端
+│   ├── rules.py                   # 預警判定規則
+│   ├── state.py                   # 狀態持久化
+│   └── notifiers/
+│       ├── sendgrid_mail.py       # （可选）SendGrid 郵件发送
+│       └── smtp_mail.py           # SMTP 郵件發送
+├── requirements.txt
+└── README.md
+```
+
+## 注意事項
+
+- GitHub Actions cron 最小粒度為 5 分鐘，因此「立即通知」實際延遲約 0–5 分鐘
+- `data/state.json` 會由 Actions 自動 commit 回倉庫，用於跨運行去重
+- 首次部署時，若當前已有緊急預警生效，會在第一次檢查時發送通知
+
+## License
+
+MIT
