@@ -27,14 +27,23 @@ class SMTPNotifier:
         mail_to: str | None = None,
     ) -> None:
         self.smtp_host = smtp_host or os.environ["SMTP_HOST"]
-        self.smtp_port = int(
-            smtp_port
-            or os.environ.get("SMTP_PORT", os.environ.get("SMTP_PORT_STR", 587))
+        self.smtp_port = self._parse_port(
+            smtp_port or os.environ.get("SMTP_PORT", os.environ.get("SMTP_PORT_STR"))
         )
         self.smtp_username = smtp_username or os.environ["SMTP_USERNAME"]
         self.smtp_password = smtp_password or os.environ["SMTP_PASSWORD"]
         self.mail_from = mail_from or os.environ["MAIL_FROM"]
         self.mail_to = mail_to or os.environ["MAIL_TO"]
+
+    @staticmethod
+    def _parse_port(raw_port: object | None) -> int:
+        """Parse SMTP port, tolerating quoted or whitespace-padded values."""
+        if raw_port is None:
+            return 587
+        port = str(raw_port).strip().strip('"').strip("'")
+        if not port:
+            return 587
+        return int(port)
 
     def send(self, subject: str, body: str) -> None:
         msg = MIMEText(body, _charset="utf-8")
