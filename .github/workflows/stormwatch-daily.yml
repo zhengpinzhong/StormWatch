@@ -27,13 +27,9 @@ jobs:
 
       - name: Send daily summary
         env:
-          EMAIL_BACKEND: smtp
-          SMTP_HOST: "smtp-mail.outlook.com"
-          SMTP_PORT: "587"
-          SMTP_USERNAME: ${{ secrets.SMTP_USERNAME }}
-          SMTP_PASSWORD: ${{ secrets.SMTP_PASSWORD }}
-          MAIL_FROM: ${{ secrets.MAIL_FROM }}
-          MAIL_TO: ${{ secrets.MAIL_TO }}
+          EMAIL_BACKEND: bark
+          BARK_BASE_URL: ${{ secrets.BARK_BASE_URL }}
+          BARK_DEVICE_KEY: ${{ secrets.BARK_DEVICE_KEY }}
           PYTHONPATH: ${{ github.workspace }}
         run: python -m src.main daily
 

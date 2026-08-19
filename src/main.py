@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from pathlib import Path
 
 from src.hko_client import HKOClient
+from src.notifiers.bark import BarkNotifier
 from src.notifiers.sendgrid_mail import SendGridNotifier
 from src.notifiers.smtp_mail import SMTPNotifier
 from src.rules import filter_daily_warnings, filter_immediate_alerts, is_immediate_alert
@@ -21,13 +22,15 @@ logger = logging.getLogger(__name__)
 
 def build_notifier():
     """
-    Choose email backend.
+    Choose notification backend.
 
-    Default is SMTP (so project still works even if SendGrid onboarding is blocked).
-    Set EMAIL_BACKEND=sendgrid to force SendGrid.
+    Default is Bark.
+    Set EMAIL_BACKEND=bark|smtp|sendgrid to override.
     """
 
-    backend = os.environ.get("EMAIL_BACKEND", "smtp").strip().lower()
+    backend = os.environ.get("EMAIL_BACKEND", "bark").strip().lower()
+    if backend == "bark":
+        return BarkNotifier()
     if backend == "sendgrid":
         return SendGridNotifier()
     return SMTPNotifier()
