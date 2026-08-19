@@ -9,4 +9,5 @@ build/
 venv/
 .DS_Store
 .idea/
+.vscode/
 *.log
