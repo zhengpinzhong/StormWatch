@@ -5,6 +5,7 @@ from __future__ import annotations
 import logging
 import os
 from typing import Sequence
+from urllib.parse import quote
 
 import requests
 
@@ -28,13 +29,10 @@ class BarkNotifier:
         ).strip().rstrip("/")
 
     def send(self, title: str, body: str, group: str, level: str = "active") -> None:
-        payload = {
-            "title": title,
-            "body": body,
-        }
-        response = requests.post(
-            f"{self.base_url}/{self.device_key}",
-            data=payload,
+        encoded_title = quote(title, safe="")
+        encoded_body = quote(body, safe="")
+        response = requests.get(
+            f"{self.base_url}/{self.device_key}/{encoded_title}/{encoded_body}",
             timeout=30,
         )
         response.raise_for_status()
