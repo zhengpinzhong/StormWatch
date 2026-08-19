@@ -29,8 +29,10 @@ class BarkNotifier:
         ).strip().rstrip("/")
 
     def send(self, title: str, body: str, group: str, level: str = "active") -> None:
+        compact_body = " | ".join(line.strip() for line in body.splitlines() if line.strip())
+        compact_body = compact_body[:160]
         encoded_title = quote(title, safe="")
-        encoded_body = quote(body, safe="")
+        encoded_body = quote(compact_body, safe="")
         response = requests.get(
             f"{self.base_url}/{self.device_key}/{encoded_title}/{encoded_body}",
             timeout=30,
@@ -48,13 +50,10 @@ class BarkNotifier:
         body_lines = []
         detail_map = self._build_detail_map(details or [])
         for warning in warnings:
-            body_lines.append(f"{get_warning_label(warning)}")
-            body_lines.append(f"发出时间：{warning.issue_time}")
+            body_lines.append(f"{get_warning_label(warning)}，时间：{warning.issue_time}")
             detail = detail_map.get(warning.statement_code)
             if detail and detail.contents:
-                body_lines.append(detail.contents[0])
-            body_lines.append("")
-        body_lines.append("数据来源：香港天文台")
+                body_lines.append(detail.contents[0][:60])
         self.send(title, "\n".join(body_lines).strip(), group="stormwatch-immediate")
 
     def send_daily_summary(
@@ -64,12 +63,11 @@ class BarkNotifier:
         immediate_active: Sequence[WarningSummary] | None = None,
     ) -> None:
         title = "StormWatch 每日预警汇总"
-        body_lines = ["09:30 HKT 汇总", ""]
+        body_lines = ["09:30 HKT 汇总"]
         if immediate_active:
-            body_lines.append("紧急预警（当前生效）:")
+            body_lines.append("紧急预警:")
             for warning in immediate_active:
                 body_lines.append(f"- {get_warning_label(warning)}")
-            body_lines.append("")
         detail_map = self._build_detail_map(details or [])
         if warnings:
             body_lines.append("其他警告:")
@@ -77,7 +75,7 @@ class BarkNotifier:
                 body_lines.append(f"- {get_warning_label(warning)}")
                 detail = detail_map.get(warning.statement_code)
                 if detail and detail.contents:
-                    body_lines.append(f"  {detail.contents[0][:120]}")
+                    body_lines.append(f"  {detail.contents[0][:40]}")
         else:
             body_lines.append("当前没有其他生效中的天气警告。")
         self.send(title, "\n".join(body_lines).strip(), group="stormwatch-daily", level="timeSensitive")
