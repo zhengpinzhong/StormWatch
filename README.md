@@ -4,7 +4,7 @@
 
 ## 功能
 
-- **立即通知**（每 5 分鐘檢查一次）：
+- **立即通知**（每 10 分鐘檢查一次）：
   - 黑色暴雨（WRAINB）
   - 紅色暴雨（WRAINR）
   - 8號風球（TC8NE / TC8NW / TC8SE / TC8SW）
@@ -48,7 +48,7 @@ GitHub Actions (cron)
 
 推送代碼後，兩個 workflow 會自動運行：
 
-- `stormwatch-immediate.yml`：每 5 分鐘檢查緊急預警
+- `stormwatch-immediate.yml`：每 10 分鐘檢查緊急預警
 - `stormwatch-daily.yml`：每天 09:30 HKT 發送匯總
 
 也可在 Actions 頁面手動觸發（workflow_dispatch）。
@@ -84,7 +84,7 @@ python -m src.main daily
 ```
 StormWatch/
 ├── .github/workflows/
-│   ├── stormwatch-immediate.yml   # 每 5 分鐘緊急檢查
+│   ├── stormwatch-immediate.yml   # 每 10 分鐘緊急檢查
 │   └── stormwatch-daily.yml       # 每日 09:30 匯總
 ├── data/
 │   └── state.json                 # 去重狀態（由 Actions 自動更新）
@@ -103,7 +103,7 @@ StormWatch/
 
 ## 注意事項
 
-- GitHub Actions cron 最小粒度為 5 分鐘，因此「立即通知」實際延遲約 0–5 分鐘
+- 当前 `Immediate` 任务每 10 分钟运行一次，因此实际提醒延迟通常在 0–10 分钟之间
 - `data/state.json` 會由 Actions 自動 commit 回倉庫，用於跨運行去重
 - 首次部署時，若當前已有緊急預警生效，會在第一次檢查時發送通知
 - 项目默认直接使用官方 Bark 服务 `https://api.day.app`
