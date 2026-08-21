@@ -4,16 +4,21 @@ from __future__ import annotations
 
 from src.hko_client import WarningSummary
 
-# Immediate alert subtypes
+# Extreme weather subtypes that trigger immediate notifications.
 IMMEDIATE_SUBTYPES = frozenset(
     {
         "WRAINR",  # Red rainstorm
         "WRAINB",  # Black rainstorm
+        "WHOT",  # Very hot weather
+        "WCOLD",  # Cold weather
         "TC8NE",
         "TC8NW",
         "TC8SE",
         "TC8SW",
+        "TC9",
         "TC10",
+        "WL",  # Landslip
+        "WTMW",  # Tsunami
     }
 )
 
@@ -60,8 +65,3 @@ def get_warning_label(warning: WarningSummary) -> str:
 def filter_immediate_alerts(warnings: list[WarningSummary]) -> list[WarningSummary]:
     """Return warnings that qualify for immediate notification."""
     return [warning for warning in warnings if is_immediate_alert(warning)]
-
-
-def filter_daily_warnings(warnings: list[WarningSummary]) -> list[WarningSummary]:
-    """Return warnings for daily summary (excludes immediate-alert types)."""
-    return [warning for warning in warnings if not is_immediate_alert(warning)]

@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import os
 from typing import Sequence
-from urllib.parse import quote
 
 import requests
 
@@ -28,16 +27,25 @@ class BarkNotifier:
             base_url or os.environ.get("BARK_BASE_URL", "https://api.day.app")
         ).strip().rstrip("/")
 
-    def send(self, title: str, body: str, group: str, level: str = "active") -> None:
-        compact_body = " | ".join(line.strip() for line in body.splitlines() if line.strip())
-        compact_body = compact_body[:60]
-        encoded_title = quote(title, safe="")
-        encoded_body = quote(compact_body, safe="")
-        response = requests.get(
-            f"{self.base_url}/{self.device_key}/{encoded_title}/{encoded_body}",
+    def send(self, title: str, body: str, group: str = "stormwatch", level: str = "timeSensitive") -> None:
+        # Prefer JSON POST to /push so detailed Chinese bodies are not truncated by URL length.
+        payload = {
+            "device_key": self.device_key,
+            "title": title,
+            "body": body,
+            "group": group,
+            "level": level,
+        }
+        response = requests.post(
+            f"{self.base_url}/push",
+            json=payload,
+            headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=30,
         )
-        response.raise_for_status()
+        if response.status_code >= 400:
+            raise RuntimeError(
+                f"Bark API error {response.status_code}: {response.text}"
+            )
         logger.info("Bark notification sent: %s", title)
 
     def send_immediate_alert(
@@ -46,31 +54,39 @@ class BarkNotifier:
         details: Sequence[WarningDetail] | None = None,
     ) -> None:
         labels = [get_warning_label(warning) for warning in warnings]
-        title = f"StormWatch 紧急预警：{', '.join(labels)}"
-        body_lines = []
+        title = f"StormWatch 極端天氣：{', '.join(labels)}"
+        detail_map = self._build_detail_map(details or [])
+        body_lines = [
+            "香港天文台已發出極端天氣警告，請留意安全：",
+            "",
+        ]
         for warning in warnings:
-            body_lines.append(f"{get_warning_label(warning)}，时间：{warning.issue_time}")
+            body_lines.append(f"▸ {get_warning_label(warning)}")
+            body_lines.append(f"  代碼：{warning.subtype}")
+            body_lines.append(f"  動作：{warning.action_code}")
+            body_lines.append(f"  發出時間：{warning.issue_time}")
+            if warning.update_time and warning.update_time != warning.issue_time:
+                body_lines.append(f"  更新時間：{warning.update_time}")
+            if warning.expire_time:
+                body_lines.append(f"  預計結束：{warning.expire_time}")
+            if warning.warning_type:
+                body_lines.append(f"  類型：{warning.warning_type}")
+            detail = detail_map.get(warning.statement_code)
+            if detail and detail.contents:
+                body_lines.append("  詳情：")
+                for line in detail.contents[:8]:
+                    text = str(line).strip()
+                    if text:
+                        body_lines.append(f"    {text}")
+            body_lines.append("")
+        body_lines.extend(
+            [
+                "---",
+                "資料來源：香港天文台開放數據 API",
+                "此通知由 StormWatch 自動發送",
+            ]
+        )
         self.send(title, "\n".join(body_lines).strip(), group="stormwatch-immediate")
-
-    def send_daily_summary(
-        self,
-        warnings: Sequence[WarningSummary],
-        details: Sequence[WarningDetail] | None = None,
-        immediate_active: Sequence[WarningSummary] | None = None,
-    ) -> None:
-        title = "StormWatch 每日预警汇总"
-        body_lines = ["09:30 HKT 汇总"]
-        if immediate_active:
-            body_lines.append(f"紧急预警 {len(immediate_active)} 条")
-            for warning in immediate_active:
-                body_lines.append(get_warning_label(warning))
-        if warnings:
-            body_lines.append(f"其他警告 {len(warnings)} 条")
-            for warning in warnings:
-                body_lines.append(get_warning_label(warning))
-        else:
-            body_lines.append("当前没有其他生效中的天气警告。")
-        self.send(title, "\n".join(body_lines).strip(), group="stormwatch-daily", level="timeSensitive")
 
     @staticmethod
     def _build_detail_map(
@@ -80,4 +96,3 @@ class BarkNotifier:
         for detail in details:
             detail_map[detail.statement_code] = detail
         return detail_map
-

@@ -55,4 +55,4 @@ echo "  EMAIL_BACKEND"
 echo "  BARK_DEVICE_KEY"
 echo
 echo "Next step:"
-echo "  gh workflow run \"StormWatch Daily\""
+echo "  gh workflow run \"StormWatch Immediate\""

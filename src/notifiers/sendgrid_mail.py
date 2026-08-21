@@ -57,61 +57,26 @@ class SendGridNotifier:
         details: Sequence[WarningDetail] | None = None,
     ) -> None:
         labels = [get_warning_label(warning) for warning in warnings]
-        subject = f"[StormWatch] HKO 緊急預警：{', '.join(labels)}"
+        subject = f"[StormWatch] HKO 極端天氣：{', '.join(labels)}"
         body_lines = [
-            "香港天文台已發出以下緊急天氣警告，請留意安全：",
+            "香港天文台已發出極端天氣警告，請留意安全：",
             "",
         ]
         detail_map = self._build_detail_map(details or [])
         for warning in warnings:
             body_lines.append(f"▸ {get_warning_label(warning)}")
-            body_lines.append(f"  發出時間：{warning.issue_time}")
+            body_lines.append(f"  代碼：{warning.subtype}")
             body_lines.append(f"  動作：{warning.action_code}")
+            body_lines.append(f"  發出時間：{warning.issue_time}")
+            if warning.update_time and warning.update_time != warning.issue_time:
+                body_lines.append(f"  更新時間：{warning.update_time}")
+            if warning.expire_time:
+                body_lines.append(f"  預計結束：{warning.expire_time}")
             detail = detail_map.get(warning.statement_code)
             if detail and detail.contents:
                 body_lines.append("  詳情：")
-                for line in detail.contents[:5]:
+                for line in detail.contents[:8]:
                     body_lines.append(f"    {line}")
-            body_lines.append("")
-        body_lines.extend(
-            [
-                "---",
-                "此郵件由 StormWatch 自動發送。",
-                "資料來源：香港天文台開放數據 API",
-            ]
-        )
-        self.send(subject, "\n".join(body_lines))
-
-    def send_daily_summary(
-        self,
-        warnings: Sequence[WarningSummary],
-        details: Sequence[WarningDetail] | None = None,
-        immediate_active: Sequence[WarningSummary] | None = None,
-    ) -> None:
-        subject = "[StormWatch] HKO 每日天氣預警匯總 (09:30)"
-        body_lines = [
-            "香港天文台每日天氣預警匯總（09:30 HKT）",
-            "",
-        ]
-        if immediate_active:
-            body_lines.append("【緊急預警（現正生效）】")
-            for warning in immediate_active:
-                body_lines.append(
-                    f"  ▸ {get_warning_label(warning)}（{warning.issue_time}）"
-                )
-            body_lines.append("")
-        detail_map = self._build_detail_map(details or [])
-        if warnings:
-            body_lines.append("【其他生效中的警告】")
-            for warning in warnings:
-                body_lines.append(f"  ▸ {get_warning_label(warning)}")
-                body_lines.append(f"    發出時間：{warning.issue_time}")
-                detail = detail_map.get(warning.statement_code)
-                if detail and detail.contents:
-                    body_lines.append(f"    {detail.contents[0][:200]}")
-            body_lines.append("")
-        else:
-            body_lines.append("目前沒有其他生效中的天氣警告。")
             body_lines.append("")
         body_lines.extend(
             [

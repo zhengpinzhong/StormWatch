@@ -1,22 +1,20 @@
-"""StormWatch entry point for immediate and daily notification jobs."""
+"""StormWatch entry point for extreme weather notifications."""
 
 from __future__ import annotations
 
 import argparse
 import logging
-import sys
 import os
-from datetime import datetime, timezone, timedelta
+import sys
 from pathlib import Path
 
 from src.hko_client import HKOClient
 from src.notifiers.bark import BarkNotifier
 from src.notifiers.sendgrid_mail import SendGridNotifier
 from src.notifiers.smtp_mail import SMTPNotifier
-from src.rules import filter_daily_warnings, filter_immediate_alerts, is_immediate_alert
-from src.state import AppState, load_state, save_state
+from src.rules import filter_immediate_alerts
+from src.state import load_state, save_state
 
-HKT = timezone(timedelta(hours=8))
 logger = logging.getLogger(__name__)
 
 
@@ -27,7 +25,6 @@ def build_notifier():
     Default is Bark.
     Set EMAIL_BACKEND=bark|smtp|sendgrid to override.
     """
-
     backend = os.environ.get("EMAIL_BACKEND", "bark").strip().lower()
     if backend == "bark":
         return BarkNotifier()
@@ -45,7 +42,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 
 def run_immediate(state_path: Path, lang: str, dry_run: bool = False) -> int:
-    """Check for immediate alerts and send notifications for new events."""
+    """Check for extreme weather alerts and send notifications for new events."""
     client = HKOClient(lang=lang)
     state = load_state(state_path)
     warnings = client.fetch_warning_summary()
@@ -58,12 +55,12 @@ def run_immediate(state_path: Path, lang: str, dry_run: bool = False) -> int:
     ]
 
     if not new_alerts:
-        logger.info("No new immediate alerts to notify.")
+        logger.info("No new extreme weather alerts to notify.")
         save_state(state, state_path)
         return 0
 
     logger.info(
-        "Found %d new immediate alert(s): %s",
+        "Found %d new extreme alert(s): %s",
         len(new_alerts),
         ", ".join(warning.subtype for warning in new_alerts),
     )
@@ -84,47 +81,16 @@ def run_immediate(state_path: Path, lang: str, dry_run: bool = False) -> int:
     return 0
 
 
-def run_daily(state_path: Path, lang: str, dry_run: bool = False) -> int:
-    """Send daily summary of non-immediate active warnings at 09:30 HKT."""
-    today = datetime.now(HKT).strftime("%Y-%m-%d")
-    client = HKOClient(lang=lang)
-    state = load_state(state_path)
-
-    if state.last_daily_sent == today:
-        logger.info("Daily summary already sent for %s.", today)
-        return 0
-
-    warnings = client.fetch_warning_summary()
-    daily_warnings = filter_daily_warnings(warnings)
-    immediate_active = [w for w in warnings if is_immediate_alert(w)]
-
-    logger.info(
-        "Daily summary: %d other warning(s), %d immediate active.",
-        len(daily_warnings),
-        len(immediate_active),
-    )
-
-    if dry_run:
-        logger.info("DRY RUN would send daily summary for %s.", today)
-        return 0
-
-    details = client.fetch_warning_info()
-    notifier = build_notifier()
-    notifier.send_daily_summary(daily_warnings, details, immediate_active)
-
-    state.last_daily_sent = today
-    save_state(state, state_path)
-    return 0
-
-
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        description="StormWatch: HKO weather warning monitor",
+        description="StormWatch: HKO extreme weather alert monitor",
     )
     parser.add_argument(
         "mode",
-        choices=["immediate", "daily"],
-        help="Run mode: immediate alert check or daily summary",
+        nargs="?",
+        default="immediate",
+        choices=["immediate"],
+        help="Run mode (only immediate is supported)",
     )
     parser.add_argument(
         "--state-path",
@@ -141,7 +107,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Fetch and evaluate without sending emails or updating state",
+        help="Fetch and evaluate without sending notifications or updating state",
     )
     parser.add_argument(
         "--verbose",
@@ -157,9 +123,7 @@ def main(argv: list[str] | None = None) -> int:
     setup_logging(args.verbose)
 
     try:
-        if args.mode == "immediate":
-            return run_immediate(args.state_path, args.lang, args.dry_run)
-        return run_daily(args.state_path, args.lang, args.dry_run)
+        return run_immediate(args.state_path, args.lang, args.dry_run)
     except Exception:
         logger.exception("StormWatch job failed")
         return 1

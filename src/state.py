@@ -15,7 +15,6 @@ class AppState:
     """Application state persisted between runs."""
 
     notified_keys: set[str] = field(default_factory=set)
-    last_daily_sent: str | None = None
 
     def has_notified(self, key: str) -> bool:
         return key in self.notified_keys
@@ -26,7 +25,6 @@ class AppState:
     def to_dict(self) -> dict[str, Any]:
         return {
             "notified_keys": sorted(self.notified_keys),
-            "last_daily_sent": self.last_daily_sent,
         }
 
     @classmethod
@@ -34,10 +32,7 @@ class AppState:
         keys = data.get("notified_keys", [])
         if not isinstance(keys, list):
             keys = []
-        return cls(
-            notified_keys=set(str(key) for key in keys),
-            last_daily_sent=data.get("last_daily_sent"),
-        )
+        return cls(notified_keys=set(str(key) for key in keys))
 
 
 def load_state(path: Path | None = None) -> AppState:

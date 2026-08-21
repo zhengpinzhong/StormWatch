@@ -1,18 +1,19 @@
 # StormWatch
 
-香港天文台（HKO）天氣預警監測機器人。當出現**黑色/紅色暴雨**或**8號/10號風球**時立即發送 Bark 推送；其它警告則在每天 **09:30 HKT** 匯總推送。
+香港天文台（HKO）極端天氣監測機器人。當出現**酷熱/寒冷、黑色/紅色暴雨、8號及以上風球、山泥傾瀉、海嘯**等極端天氣警告時，透過 Bark 立即通知你。
 
 ## 功能
 
-- **立即通知**（每 10 分鐘檢查一次）：
-  - 黑色暴雨（WRAINB）
-  - 紅色暴雨（WRAINR）
+- **極端天氣立即通知**（每 10 分鐘檢查一次）：
+  - 酷熱天氣警告（WHOT）
+  - 寒冷天氣警告（WCOLD）
+  - 紅色暴雨（WRAINR）/ 黑色暴雨（WRAINB）
   - 8號風球（TC8NE / TC8NW / TC8SE / TC8SW）
-  - 10號風球（TC10）
-- **每日匯總**（09:30 HKT）：
-  - 其它生效中的天氣警告
-  - 同時列出當前生效的緊急預警狀態
-- **去重機制**：透過 `data/state.json` 記錄已通知事件，避免重複發信
+  - 9號 / 10號風球（TC9 / TC10）
+  - 山泥傾瀉警告（WL）
+  - 海嘯警告（WTMW）
+- **詳細推送內容**：警告名稱、代碼、發出/更新時間，以及天文台詳細說明
+- **去重機制**：透過 `data/state.json` 記錄已通知事件，避免重複推送
 
 ## 架構
 
@@ -20,7 +21,7 @@
 GitHub Actions (cron)
     → src/main.py
         → HKO Open Data API (warnsum / warningInfo)
-        → rules.py（判定是否立即觸發）
+        → rules.py（判定是否極端天氣）
         → state.json（去重）
         → Bark（iPhone 推送）
 ```
@@ -46,10 +47,9 @@ GitHub Actions (cron)
 
 ### 3. 啟用 GitHub Actions
 
-推送代碼後，兩個 workflow 會自動運行：
+推送代碼後，workflow 會自動運行：
 
-- `stormwatch-immediate.yml`：每 10 分鐘檢查緊急預警
-- `stormwatch-daily.yml`：每天 09:30 HKT 發送匯總
+- `stormwatch-immediate.yml`：每 10 分鐘檢查極端天氣警告
 
 也可在 Actions 頁面手動觸發（workflow_dispatch）。
 
@@ -63,13 +63,11 @@ pip install -r requirements.txt
 export EMAIL_BACKEND="bark"
 export BARK_DEVICE_KEY="你的Bark设备Key"
 
-# 乾跑（不發郵件、不寫 state）
+# 乾跑（不發通知、不寫 state）
 python -m src.main immediate --dry-run --verbose
-python -m src.main daily --dry-run --verbose
 
 # 實際運行
 python -m src.main immediate
-python -m src.main daily
 ```
 
 ## 數據來源
@@ -84,14 +82,13 @@ python -m src.main daily
 ```
 StormWatch/
 ├── .github/workflows/
-│   ├── stormwatch-immediate.yml   # 每 10 分鐘緊急檢查
-│   └── stormwatch-daily.yml       # 每日 09:30 匯總
+│   └── stormwatch-immediate.yml   # 每 10 分鐘極端天氣檢查
 ├── data/
 │   └── state.json                 # 去重狀態（由 Actions 自動更新）
 ├── src/
 │   ├── main.py                    # 入口
 │   ├── hko_client.py              # HKO API 客戶端
-│   ├── rules.py                   # 預警判定規則
+│   ├── rules.py                   # 極端天氣判定規則
 │   ├── state.py                   # 狀態持久化
 │   └── notifiers/
 │       ├── bark.py                # Bark 推送
@@ -103,9 +100,9 @@ StormWatch/
 
 ## 注意事項
 
-- 当前 `Immediate` 任务每 10 分钟运行一次，因此实际提醒延迟通常在 0–10 分钟之间
+- 当前任务每 10 分钟运行一次，因此实际提醒延迟通常在 0–10 分钟之间
 - `data/state.json` 會由 Actions 自動 commit 回倉庫，用於跨運行去重
-- 首次部署時，若當前已有緊急預警生效，會在第一次檢查時發送通知
+- 首次部署時，若當前已有極端天氣警告生效，會在第一次檢查時發送通知
 - 项目默认直接使用官方 Bark 服务 `https://api.day.app`
 
 ## License
