@@ -1,15 +1,19 @@
 name: StormWatch Immediate
 
+# PROJECT PAUSED — do not run until explicitly re-enabled.
+# Workflow is also disabled via: gh workflow disable "StormWatch Immediate"
 on:
-  schedule:
-    - cron: "*/10 * * * *"
   workflow_dispatch:
+    # Keep dispatch disabled at the Actions UI level; file kept for later restore.
+    # schedule:
+    #   - cron: "*/10 * * * *"
 
 permissions:
   contents: write
 
 jobs:
   immediate:
+    if: false # hard stop while project is paused
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
