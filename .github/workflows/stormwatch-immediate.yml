@@ -1,9 +1,10 @@
 name: StormWatch Immediate
 
 on:
-  schedule:
-    # Every 10 minutes
-    - cron: "*/10 * * * *"
+  # Cron paused while GitHub account billing lock blocks Actions.
+  # Re-enable after Support clears the lock.
+  # schedule:
+  #   - cron: "*/10 * * * *"
   workflow_dispatch:
 
 permissions:
